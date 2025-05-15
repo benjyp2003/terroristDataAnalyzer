@@ -17,8 +17,46 @@ namespace terroristDataAnalyzer
             //HandleMenuChoice(Console.ReadLine());
         }
 
-        
 
+        static void ShowMenu()
+        {
+            Console.Clear();
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+            string[] menuItems = new[]
+            {
+    "1. Find the most common weapon",
+    "2. Find the least common weapon",
+    "3. Find the organization with the most members",
+    "4. Find the organization with the least members",
+    "5. Find the 2 terrorists who are closest to each other",
+};
+
+            int boxWidth = 80;
+            string horizontalLine = new string('─', boxWidth - 2);
+
+            Console.WriteLine("┌" + horizontalLine + "┐");
+            Console.WriteLine("│" + CenterText("📊 Terrorist Data Analysis Menu 📊", boxWidth - 2) + "│");
+            Console.WriteLine("├" + horizontalLine + "┤");
+
+            foreach (var item in menuItems)
+            {
+                Console.WriteLine("│ " + item.PadRight(boxWidth - 3) + "│");
+            }
+
+            Console.WriteLine("└" + horizontalLine + "┘");
+            Console.Write("Select an option (1-5): ");
+        }
+
+        static string CenterText(string text, int width)
+        {
+            int padding = (width - text.Length) / 2;
+            return new string(' ', padding) + text + new string(' ', width - text.Length - padding);
+        }
+
+
+
+        
 
 
 
