@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -13,14 +14,21 @@ namespace terroristDataAnalyzer
         static void Main(string[] args)
         {
             List<Dictionary<string, object>> terrorist = JenerateTerrorists();
-            //ShowMenu();
-            //HandleMenuChoice(Console.ReadLine());
+            while (true)
+            {
+                ShowMenu();
+                string choice = Console.ReadLine();
+                if (choice == "6")
+                { break; }
+                Console.WriteLine(HandleMenuChoice(choice, terrorist) + "\n");
+            }
+
         }
 
 
         static void ShowMenu()
         {
-            Console.Clear();
+            //Console.Clear();
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             string[] menuItems = new[]
@@ -30,6 +38,7 @@ namespace terroristDataAnalyzer
     "3. Find the organization with the most members",
     "4. Find the organization with the least members",
     "5. Find the 2 terrorists who are closest to each other",
+    "6. exit the program",
 };
 
             int boxWidth = 80;
@@ -56,9 +65,188 @@ namespace terroristDataAnalyzer
 
 
 
+        static string HandleMenuChoice(string choice, List<Dictionary<string, object>> terrorist)
+        {
+            switch (choice)
+            {
+                case "1":
+                    return FindMostCommonWeapon(terrorist);
+
+                case "2":
+                    return FindLeastCommonWeapon(terrorist);
+
+                case "3":
+                    return FindMostMembersOrg(terrorist);
+
+                case "4":
+                    return FindLeastMembersOrg(terrorist);
+
+                case "5":
+                    return FindClosestTerrorist(terrorist);
+
+
+                default:
+                    return "unvalid number, please try again.";
+
+            }
+            return "";
+        }
+
+        static string FindClosestTerrorist(List<Dictionary<string, object>> terrorists)
+        {
+            double minDistance = double.MaxValue;
+            string terrorist1 = "";
+            string terrorist2 = "";
+
+            for (int i = 0; i < terrorists.Count; i++)
+            {
+                for (int j = i + 1; j < terrorists.Count; j++)
+                {
+                    var loc1 = (Dictionary<string, string>)terrorists[i]["lastLocation"];
+                    var loc2 = (Dictionary<string, string>)terrorists[j]["lastLocation"];
+
+                    double lat1 = double.Parse(loc1["lat"]);
+                    double lon1 = double.Parse(loc1["lon"]);
+                    double lat2 = double.Parse(loc2["lat"]);
+                    double lon2 = double.Parse(loc2["lon"]);
+
+                    double distance = Math.Sqrt(Math.Pow(lat1 - lat2, 2) + Math.Pow(lon1 - lon2, 2));
+
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                        terrorist1 = (string)terrorists[i]["name"];
+                        terrorist2 = (string)terrorists[j]["name"];
+                    }
+                }
+            }
+
+            return $"The closest terrorists are:\n{terrorist1}\n{terrorist2}\nDistance between them: {minDistance:F2}";
+        }
+
         
+        static string FindMostCommonWeapon(List<Dictionary<string, object>> terrorist)
+        {
+            Dictionary<string, int> weaponDict = GetWeaponsDict(terrorist);
+            return GetMaxDictVal(weaponDict);
+
+        }
 
 
+        static string FindLeastCommonWeapon(List<Dictionary<string, object>> terrorist)
+        {
+            Dictionary<string, int> weaponDict = GetWeaponsDict(terrorist);
+            return GetMinDictVal(weaponDict);
+        }
+
+
+        static Dictionary<string, int> GetWeaponsDict(List<Dictionary<string, object>> terrorist)
+        {
+            Dictionary<string, int> weaponDict = new Dictionary<string, int>();
+
+            foreach (var dict in terrorist)
+            {
+                if (dict.TryGetValue("weapons", out object weaponsObj) && weaponsObj is List<string> weapons)
+                {
+                    foreach (var weapon in weapons)
+                    {
+                        if (weaponDict.ContainsKey(weapon))
+                        {
+                            weaponDict[weapon] += 1;
+                        }
+                        else
+                        {
+                            weaponDict.Add(weapon, 1);
+                        }
+                    }
+
+                }
+                else
+                {
+                    Console.WriteLine("No weapons found or invalid format.");
+                }
+            }
+
+            return weaponDict;
+        }
+
+
+
+
+        static string FindMostMembersOrg(List<Dictionary<string, object>> terrorist)
+        {
+            Dictionary<string, int> orgDict = getOrgDict(terrorist);
+            
+            return GetMaxDictVal(orgDict);
+        }
+
+        static string FindLeastMembersOrg(List<Dictionary<string, object>> terrorist)
+        {
+            Dictionary<string, int> orgDict = getOrgDict(terrorist);
+
+            return GetMaxDictVal(orgDict);
+
+        }
+
+        static Dictionary<string, int> getOrgDict(List<Dictionary<string, object>> terrorist)
+        {
+            Dictionary<string, int> OrgMemberNumbersDict = new Dictionary<string, int>();
+
+            foreach (var dict in terrorist)
+            {
+                if (dict.TryGetValue("affiliation", out object affiliationObj) && affiliationObj is string affiliation)
+                {
+                    
+                        if (OrgMemberNumbersDict.ContainsKey((string)dict["affiliation"]))
+                        {
+                            OrgMemberNumbersDict[(string)dict["affiliation"]] += 1;
+                        }
+                        else
+                        {
+                            OrgMemberNumbersDict.Add((string)dict["affiliation"], 1);
+                        }
+                    
+                }
+                else
+                {
+                    Console.WriteLine("No affiliations found or invalid format.");
+                }
+            }
+
+            return OrgMemberNumbersDict;
+        }
+
+
+        static string GetMaxDictVal(Dictionary<string, int> dict)
+        {
+            int max = dict.Max(x => x.Value);
+            string maxKey = "";
+            foreach (string weapon in dict.Keys)
+            {
+                if (dict[weapon] == max)
+                {
+                    maxKey = weapon;
+                    break;
+                }
+            }
+            return maxKey;
+        }
+
+
+        static string GetMinDictVal(Dictionary<string, int> dict)
+        {
+            int min = dict.Min(x => x.Value);
+            string minKey = "";
+            foreach (string weapon in dict.Keys)
+            {
+                if (dict[weapon] == min)
+                {
+                    minKey = weapon;
+                    break;
+                }
+            }
+            return minKey;
+        }
 
 
         static List<Dictionary<string, object>> JenerateTerrorists()
@@ -104,12 +292,12 @@ namespace terroristDataAnalyzer
                 terrorists.Add(person);
             }
 
-            // Write JSON-style dict array to text file
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string jsonOutput = JsonSerializer.Serialize(terrorists, options);
-            // The file 'terrorists.txt' will be saved in the same folder where the program is running.
-            // If you're using Visual Studio, it's usually in: bin/Debug/netX.X/terrorists.txt
-            File.WriteAllText("terrorists.txt", jsonOutput);
+            //// Write JSON-style dict array to text file
+            //var options = new JsonSerializerOptions { WriteIndented = true };
+            //string jsonOutput = JsonSerializer.Serialize(terrorists, options);
+            //// The file 'terrorists.txt' will be saved in the same folder where the program is running.
+            //// If you're using Visual Studio, it's usually in: bin/Debug/netX.X/terrorists.txt
+            //File.WriteAllText("terrorists.txt", jsonOutput);
 
             return terrorists;
         }
